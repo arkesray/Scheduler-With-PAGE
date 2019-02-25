@@ -6,7 +6,8 @@
 #    Dec 25, 2018 11:25:28 PM IST  platform: Windows NT
 
 import sys
-import os, datetime, xlrd
+import os, datetime, xlrd, playsound
+from threading import Thread
 
 try:
     import Tkinter as tk
@@ -28,6 +29,19 @@ def getData(fileLocation):
     sheet = workbook.sheet_by_index(0)
     data = [[sheet.cell_value(r,c) for c in range(sheet.ncols)] for r in range(1,sheet.nrows)]
     return data
+
+def diff_times_in_seconds(t1, t2):
+    # caveat emptor - assumes t1 & t2 are python times, on the same day and t2 is after t1
+    h1, m1, s1 = t1.hour, t1.minute, t1.second
+    h2, m2, s2 = t2.hour, t2.minute, t2.second
+    t1_secs = s1 + 60 * (m1 + 60*h1)
+    t2_secs = s2 + 60 * (m2 + 60*h2)
+    return( t2_secs - t1_secs)
+
+def playy():
+    playsound.playsound("Buzz.mp3")
+
+
 
 def vp_start_gui():
     '''Starting point when module is the main routine.'''
@@ -121,20 +135,22 @@ class Toplevel1:
         self.CurrentEvent.configure(text="Current Event")
 
         self.DoneButton = ttk.Button(self.Notifier)
-        self.DoneButton.place(relx=0.750, rely=0.414, height=29, width=50)
+        self.DoneButton.place(relx=0.025, rely=0.414, height=29, width=50)
         self.DoneButton.configure(takefocus="",  width=76, command = self.doneClicked)
         self.DoneButton.configure(text='''Done''')
 
         self.SkipButton = ttk.Button(self.Notifier)
-        self.SkipButton.place(relx=0.875, rely=0.414, height=29, width=50)
+        self.SkipButton.place(relx=0.750, rely=0.414, height=29, width=50)
         self.SkipButton.configure(takefocus="",  width=76, command = self.skipClicked)
         self.SkipButton.configure(text='''Skip''')
 
+        """
         self.StartButton = ttk.Button(self.Notifier)
         self.StartButton.place(relx=0.025, rely=0.414, height=29, width=50)
         self.StartButton.configure(takefocus="",  width=76)
         self.StartButton.configure(text='''Start''')
-
+		"""
+		
         self.StartTime_NE = ttk.Label(self.Notifier)
         self.StartTime_NE.place(relx=0.150, rely=0.75, height=29, width=66)
         self.StartTime_NE.configure(background="sky blue", foreground="#000000", font=font13, relief='flat',  width=66)
@@ -227,6 +243,13 @@ class Toplevel1:
                 self.eNoSet = set()
                 self.eNoSet.add(eNo)
 
+            #buzzer for Current event
+            diff = abs(diff_times_in_seconds(datetime.datetime.strptime(self.schedule[eNo][2], "%H:%M").time(), time))
+            if diff//60 < 10 and self.doneFlag == 0:
+                T = Thread(target=playy)
+                T.start()
+                
+                
             self.StartTime_CE.configure(text=self.schedule[eNo][1])
             self.EndTime_CE.configure(text=self.schedule[eNo][2])
             self.CurrentEvent.configure(text=self.schedule[eNo][0])
